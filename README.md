@@ -3,7 +3,7 @@
 
 ![Rotating Cube with Animated Textures](https://github.com/contriteobserver/RajawaliWebpAnimation/tree/master/images/RotatingCube.gif "Rotating Cube with Animated Textures")
 
-A proof of concept integration between Rajawali and libWebp animation
+A proof of concept integration between [Rajawali](https://github.com/Rajawali/Rajawali) and [libWebp](https://developers.google.com/speed/webp/docs/api) animation
 
 This project contains submodules, so one may with to clone with the `--recurse-submodules` option, as in
 ```
