@@ -1,5 +1,5 @@
 # RajawaliWebpAnimation
-![Rotating Cube with Animated Textures](https://github.com/contriteobserver/RajawaliWebpAnimation/images/RotatingCube.gif "Rotating Cube with Animated Textures")
+![Rotating Cube with Animated Textures](https://github.com/contriteobserver/RajawaliWebpAnimation/tree/master/images "Rotating Cube with Animated Textures")
 
 A proof of concept integration between Rajawali and libWebp animation
 
