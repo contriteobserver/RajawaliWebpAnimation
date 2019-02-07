@@ -16,6 +16,7 @@ public class webpJNI {
     public static int DemuxGetFrameCount(long dmux) { return WebPDemuxGetI(dmux, WEBP_FF_FRAME_COUNT); }
     public static int DemuxGetCanvasWidth(long dmux) { return WebPDemuxGetI(dmux, WEBP_FF_CANVAS_WIDTH); }
     public static int DemuxGetCanvasHeight(long dmux) { return WebPDemuxGetI(dmux, WEBP_FF_CANVAS_HEIGHT); }
+    public static int DemuxGetBackgroundColor(long dmux) { return WebPDemuxGetI(dmux, WEBP_FF_BACKGROUND_COLOR); }
 
     public static long DemuxGetFrame(long dmux, int frame) { return WebPDemuxGetFrame(dmux, frame); }
     public static void DemuxReleaseIterator(long iter) {
@@ -29,12 +30,13 @@ public class webpJNI {
         return WebPGetDecoderVersion();
     }
     public static int  IterGetDurationMs(long iter) { return WebPIterGetDurationMs(iter); }
+    public static int  IterGetBlendMethod(long iter) { return WebPIterGetBlendMethod(iter); }
+    public static int  IterGetDisposeMethod(long iter) { return WebPIterGetBlendMethod(iter); }
     public static int  IterGetWidth(long iter) { return WebPIterGetWidth(iter); }
     public static int  IterGetHeight(long iter) { return WebPIterGetHeight(iter); }
     public static int  IterGetOffsetX(long iter) { return WebPIterGetOffsetX(iter); }
     public static int  IterGetOffsetY(long iter) { return WebPIterGetOffsetY(iter); }
-    public static int  IterGetBlendMethod(long iter) { return WebPIterGetBlendMethod(iter); }
-    public static void IterDecodeToBitmap(long iter, Bitmap bitmap, int width, int height) { WebPIterDecodeToBitmap(iter, bitmap, width, height); }
+    public static void IterDecodeToBitmap(long iter, Bitmap bitmap, int width, int height, int backgroundColor) { WebPIterDecodeToBitmap(iter, bitmap, width, height, backgroundColor); }
 
     public static long InitDecoderConfig() {
         return WebPInitDecoderConfig();
@@ -66,12 +68,12 @@ public class webpJNI {
 
     static native long WebPDemuxGetFrame(long dmux, int frame);
     static native int  WebPIterGetDurationMs(long iter);
+    static native int  WebPIterGetBlendMethod(long iter);
     static native int  WebPIterGetWidth(long iter);
     static native int  WebPIterGetHeight(long iter);
     static native int  WebPIterGetOffsetX(long iter);
     static native int  WebPIterGetOffsetY(long iter);
-    static native int  WebPIterGetBlendMethod(long iter);
-    static native void WebPIterDecodeToBitmap(long iter, Bitmap bitmap, int width, int height);
+    static native void WebPIterDecodeToBitmap(long iter, Bitmap bitmap, int width, int height, int backgroundColor);
 
     static native void WebPDemuxReleaseIterator(long iter);
     static native long WebPDemux(byte[] bytes, long size);

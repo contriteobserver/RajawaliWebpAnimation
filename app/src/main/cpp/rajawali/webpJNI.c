@@ -2,6 +2,7 @@
 #include <android/bitmap.h>
 #include <webp/demux.h>
 #include <math.h>
+#include <malloc.h>
 #include "jni.h"
 #include "webp/types.h"
 #include "webp/decode.h"
@@ -64,6 +65,30 @@ void JNICALL Java_com_google_webp_webpJNI_WebPDemuxDelete(JNIEnv *jenv, jclass j
     if(dmux) WebPDemuxDelete(dmux);
 }
 
+jint JNICALL Java_com_google_webp_webpJNI_WebPIterGetBlendMethod(JNIEnv *jenv, jclass jcls, jlong iterLong) {
+    jint jresult = 0 ;
+    WebPIterator* iter = (WebPIterator*) iterLong;
+    int result;
+
+    (void)jenv;
+    (void)jcls;
+    result = iter->blend_method;
+    jresult = (jint)result;
+    return jresult;
+}
+
+jint JNICALL Java_com_google_webp_webpJNI_WebPIterGetDisposeMethod(JNIEnv *jenv, jclass jcls, jlong iterLong) {
+    jint jresult = 0 ;
+    WebPIterator* iter = (WebPIterator*) iterLong;
+    int result;
+
+    (void)jenv;
+    (void)jcls;
+    result = iter->dispose_method;
+    jresult = (jint)result;
+    return jresult;
+}
+
 jint JNICALL Java_com_google_webp_webpJNI_WebPIterGetDurationMs(JNIEnv *jenv, jclass jcls, jlong iterLong) {
     jint jresult = 0 ;
     WebPIterator* iter = (WebPIterator*) iterLong;
@@ -124,24 +149,12 @@ jint JNICALL Java_com_google_webp_webpJNI_WebPIterGetOffsetY(JNIEnv *jenv, jclas
     return jresult;
 }
 
-jint JNICALL Java_com_google_webp_webpJNI_WebPIterGetBlendMethod(JNIEnv *jenv, jclass jcls, jlong iterLong) {
-    jint jresult = 0 ;
-    WebPIterator* iter = (WebPIterator*) iterLong;
-    int result;
-
-    (void)jenv;
-    (void)jcls;
-    result = iter->blend_method;
-    jresult = (jint)result;
-    return jresult;
-}
-
 uint8_t blend(uint8_t underlay, uint8_t overlay, uint8_t factor) {
     int result = underlay * (0xff-factor) + overlay * factor;
     return (uint8_t) (result / 0xff);
 }
 
-void JNICALL Java_com_google_webp_webpJNI_WebPIterDecodeToBitmap(JNIEnv *jenv, jclass jcls, jlong iterLong, jobject bitmap, jint jwidth, jint jheight) {
+void JNICALL Java_com_google_webp_webpJNI_WebPIterDecodeToBitmap(JNIEnv *jenv, jclass jcls, jlong iterLong, jobject bitmap, jint jwidth, jint jheight, jint jBackgroundColor) {
     WebPIterator* iter = (WebPIterator*) iterLong;
     uint8_t* pixels;
     int result;
@@ -151,6 +164,11 @@ void JNICALL Java_com_google_webp_webpJNI_WebPIterDecodeToBitmap(JNIEnv *jenv, j
     uint8_t* ptr = NULL;
     int canvasX = jwidth;
     int canvasY = jheight;
+    uint8_t *backgroundColor = &jBackgroundColor;
+    uint8_t A = backgroundColor[3];
+    uint8_t R = backgroundColor[2];
+    uint8_t G = backgroundColor[1];
+    uint8_t B = backgroundColor[0];
 
     result = AndroidBitmap_lockPixels(jenv, bitmap, &pixels);
     if (result < 0) { return; }
@@ -161,22 +179,25 @@ void JNICALL Java_com_google_webp_webpJNI_WebPIterDecodeToBitmap(JNIEnv *jenv, j
     int    offsetX = iter->x_offset;
     int    offsetY = iter->y_offset;
     buffer = WebPDecodeRGBA(bytes, size, &width, &height);
-    ptr = buffer;
 
-    switch(iter->blend_method) {
-        case WEBP_MUX_NO_BLEND:
+    switch(iter->dispose_method) {
+        case WEBP_MUX_DISPOSE_BACKGROUND:
             for(int i=0; i<canvasX*canvasY; i++) {
-                pixels[0+i*stride] = *(ptr+0);
-                pixels[1+i*stride] = *(ptr+1);
-                pixels[2+i*stride] = *(ptr+2);
-                pixels[3+i*stride] = *(ptr+3);
-                ptr+=stride;
+                pixels[0+i*stride] = R;
+                pixels[1+i*stride] = G;
+                pixels[2+i*stride] = B;
+                pixels[3+i*stride] = A;
             }
             break;
-        default:
+    }
+
+    ptr = buffer;
+    switch(iter->blend_method) {
+        case WEBP_MUX_BLEND:
             for (int y = offsetY; y < (offsetY + height); y++) {
                 for (int x = offsetX; x < (offsetX + width); x++) {
                     uint8_t a = *(ptr+3);
+
                     uint8_t r = pixels[0 + (y * canvasX + x) * stride];
                     uint8_t g = pixels[1 + (y * canvasX + x) * stride];
                     uint8_t b = pixels[2 + (y * canvasX + x) * stride];
@@ -184,6 +205,21 @@ void JNICALL Java_com_google_webp_webpJNI_WebPIterDecodeToBitmap(JNIEnv *jenv, j
                     pixels[0 + (y * canvasX + x) * stride] = blend(r, *(ptr + 0), a);
                     pixels[1 + (y * canvasX + x) * stride] = blend(g, *(ptr + 1), a);
                     pixels[2 + (y * canvasX + x) * stride] = blend(b, *(ptr + 2), a);
+                    pixels[3 + (y * canvasX + x) * stride] = A;
+
+                    ptr+=stride;
+                }
+            }
+            break;
+        case WEBP_MUX_NO_BLEND:
+            for (int y = offsetY; y < (offsetY + height); y++) {
+                for (int x = offsetX; x < (offsetX + width); x++) {
+                    uint8_t a = *(ptr+3);
+
+                    pixels[0 + (y * canvasX + x) * stride] = blend(R, *(ptr + 0), a);
+                    pixels[1 + (y * canvasX + x) * stride] = blend(G, *(ptr + 1), a);
+                    pixels[2 + (y * canvasX + x) * stride] = blend(B, *(ptr + 2), a);
+                    pixels[3 + (y * canvasX + x) * stride] = A;
 
                     ptr+=stride;
                 }

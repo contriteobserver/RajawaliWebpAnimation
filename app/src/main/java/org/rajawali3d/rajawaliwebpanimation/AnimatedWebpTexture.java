@@ -15,6 +15,8 @@ package org.rajawali3d.rajawaliwebpanimation;
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.util.Log;
 
 import com.google.webp.webpJNI;
 
@@ -34,6 +36,7 @@ public class AnimatedWebpTexture extends ASingleTexture {
     private byte[] mData;
     private long mDemux;
     private int mNumFrames;
+    private int mBackgroundColor = 0;
     private int currentFrame = 0;
 
     public AnimatedWebpTexture(String name, int resourceId) throws IOException {
@@ -50,13 +53,15 @@ public class AnimatedWebpTexture extends ASingleTexture {
 
         mWidth = webpJNI.DemuxGetCanvasWidth(mDemux);
         mHeight = webpJNI.DemuxGetCanvasHeight(mDemux);
+        mBackgroundColor = webpJNI.DemuxGetBackgroundColor(mDemux);
         mBitmap = Bitmap.createBitmap(mWidth, mHeight, ARGB_8888);
+
         DecodeFrame(currentFrame);
     }
 
     private void DecodeFrame(int frame) {
         long iter = webpJNI.DemuxGetFrame(mDemux, frame+1);
-        webpJNI.IterDecodeToBitmap(iter, mBitmap, mBitmap.getWidth(), mBitmap.getHeight());
+        webpJNI.IterDecodeToBitmap(iter, mBitmap, mBitmap.getWidth(), mBitmap.getHeight(), mBackgroundColor);
         webpJNI.DemuxReleaseIterator(iter);
         setBitmap(mBitmap);
     }

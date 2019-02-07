@@ -59,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
                 key.setPower(5.0f);
                 getCurrentScene().addLight(key);
 
-                texture = new AnimatedWebpTexture("maze", R.raw.checkerboard01);
+                texture = new AnimatedWebpTexture("maze", R.raw.capical_g_celebration);
                 Material material = new Material();
                 material.addTexture(texture);
                 material.setColorInfluence(0);
@@ -69,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
 
                 Object3D obj = new Cube(2);
                 obj.setMaterial(material);
+                obj.setTransparent(true);
                 getCurrentScene().addChild(obj);
 
                 RotateOnAxisAnimation anim = new RotateOnAxisAnimation(new Vector3(3,4,5), 360);
