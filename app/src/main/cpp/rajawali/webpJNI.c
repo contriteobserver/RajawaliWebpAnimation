@@ -173,7 +173,6 @@ void JNICALL Java_com_google_webp_webpJNI_WebPIterDecodeToBitmap(JNIEnv *jenv, j
     result = AndroidBitmap_lockPixels(jenv, bitmap, &pixels);
     if (result < 0) { return; }
 
-    size_t stride= 4;
     const uint8_t* bytes = iter->fragment.bytes;
     size_t size = iter->fragment.size;
     int    offsetX = iter->x_offset;
@@ -183,10 +182,10 @@ void JNICALL Java_com_google_webp_webpJNI_WebPIterDecodeToBitmap(JNIEnv *jenv, j
     switch(iter->dispose_method) {
         case WEBP_MUX_DISPOSE_BACKGROUND:
             for(int i=0; i<canvasX*canvasY; i++) {
-                pixels[0+i*stride] = R;
-                pixels[1+i*stride] = G;
-                pixels[2+i*stride] = B;
-                pixels[3+i*stride] = A;
+                pixels[0+i*sizeof(uint32_t)] = R;
+                pixels[1+i*sizeof(uint32_t)] = G;
+                pixels[2+i*sizeof(uint32_t)] = B;
+                pixels[3+i*sizeof(uint32_t)] = A;
             }
             break;
     }
@@ -196,18 +195,19 @@ void JNICALL Java_com_google_webp_webpJNI_WebPIterDecodeToBitmap(JNIEnv *jenv, j
         case WEBP_MUX_BLEND:
             for (int y = offsetY; y < (offsetY + height); y++) {
                 for (int x = offsetX; x < (offsetX + width); x++) {
+
                     uint8_t a = *(ptr+3);
 
-                    uint8_t r = pixels[0 + (y * canvasX + x) * stride];
-                    uint8_t g = pixels[1 + (y * canvasX + x) * stride];
-                    uint8_t b = pixels[2 + (y * canvasX + x) * stride];
+                    uint8_t r = pixels[0 + (y * canvasX + x) * sizeof(uint32_t)];
+                    uint8_t g = pixels[1 + (y * canvasX + x) * sizeof(uint32_t)];
+                    uint8_t b = pixels[2 + (y * canvasX + x) * sizeof(uint32_t)];
 
-                    pixels[0 + (y * canvasX + x) * stride] = blend(r, *(ptr + 0), a);
-                    pixels[1 + (y * canvasX + x) * stride] = blend(g, *(ptr + 1), a);
-                    pixels[2 + (y * canvasX + x) * stride] = blend(b, *(ptr + 2), a);
-                    pixels[3 + (y * canvasX + x) * stride] = A;
+                    pixels[0 + (y * canvasX + x) * sizeof(uint32_t)] = blend(r, *(ptr + 0), a);
+                    pixels[1 + (y * canvasX + x) * sizeof(uint32_t)] = blend(g, *(ptr + 1), a);
+                    pixels[2 + (y * canvasX + x) * sizeof(uint32_t)] = blend(b, *(ptr + 2), a);
+                    pixels[3 + (y * canvasX + x) * sizeof(uint32_t)] = A;
 
-                    ptr+=stride;
+                    ptr+=sizeof(uint32_t);
                 }
             }
             break;
@@ -215,13 +215,18 @@ void JNICALL Java_com_google_webp_webpJNI_WebPIterDecodeToBitmap(JNIEnv *jenv, j
             for (int y = offsetY; y < (offsetY + height); y++) {
                 for (int x = offsetX; x < (offsetX + width); x++) {
                     uint8_t a = *(ptr+3);
+                    pixels[0 + (y * canvasX + x) * sizeof(uint32_t)] = blend(R, *(ptr + 0), a);
+                    pixels[1 + (y * canvasX + x) * sizeof(uint32_t)] = blend(G, *(ptr + 1), a);
+                    pixels[2 + (y * canvasX + x) * sizeof(uint32_t)] = blend(B, *(ptr + 2), a);
 
-                    pixels[0 + (y * canvasX + x) * stride] = blend(R, *(ptr + 0), a);
-                    pixels[1 + (y * canvasX + x) * stride] = blend(G, *(ptr + 1), a);
-                    pixels[2 + (y * canvasX + x) * stride] = blend(B, *(ptr + 2), a);
-                    pixels[3 + (y * canvasX + x) * stride] = A;
+                    uint8_t alpha = pixels[3 + (y * canvasX + x) * sizeof(uint32_t)];
+                    if(alpha==0) {
+                        pixels[3 + (y * canvasX + x) * sizeof(uint32_t)] = *(ptr + 3);
+                    } else {
+                        pixels[3 + (y * canvasX + x) * sizeof(uint32_t)] = A;
+                    }
 
-                    ptr+=stride;
+                    ptr+=sizeof(uint32_t);
                 }
             }
             break;
