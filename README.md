@@ -5,7 +5,7 @@
 
 A proof of concept integration between [Rajawali](https://github.com/Rajawali/Rajawali) and [libWebp](https://developers.google.com/speed/webp/docs/api) animation
 
-This project contains submodules, so one may with to clone with the `--recurse-submodules` option, as in
+This project contains submodules, so one may wish to clone with the `--recurse-submodules` option, as in
 ```
 git clone --recurse-submodules https://github.com/contriteobserver/RajawaliWebpAnimation.git
 ```
