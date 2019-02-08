@@ -193,6 +193,10 @@ void JNICALL Java_com_google_webp_webpJNI_WebPIterDecodeToBitmap(JNIEnv *jenv, j
     ptr = buffer;
     switch(iter->blend_method) {
         case WEBP_MUX_BLEND:
+            // During the decoding of current frame, we may have set some pixels to be
+            // transparent (i.e. alpha < 255). However, the value of each of these
+            // pixels should have been determined by blending it against the value of
+            // that pixel in the previous frame if blending method of is WEBP_MUX_BLEND.
             for (int y = offsetY; y < (offsetY + height); y++) {
                 for (int x = offsetX; x < (offsetX + width); x++) {
 
@@ -205,26 +209,29 @@ void JNICALL Java_com_google_webp_webpJNI_WebPIterDecodeToBitmap(JNIEnv *jenv, j
                     pixels[0 + (y * canvasX + x) * sizeof(uint32_t)] = blend(r, *(ptr + 0), a);
                     pixels[1 + (y * canvasX + x) * sizeof(uint32_t)] = blend(g, *(ptr + 1), a);
                     pixels[2 + (y * canvasX + x) * sizeof(uint32_t)] = blend(b, *(ptr + 2), a);
-                    pixels[3 + (y * canvasX + x) * sizeof(uint32_t)] = A;
 
                     ptr+=sizeof(uint32_t);
                 }
             }
             break;
         case WEBP_MUX_NO_BLEND:
+            // We need to blend a transparent pixel with its value just after
+            // initialization. That is, blend it with:
+            // * Fully transparent pixel if it belongs to prevRect <-- No-op.
+            // * The pixel in the previous canvas otherwise <-- Need alpha-blending.
             for (int y = offsetY; y < (offsetY + height); y++) {
                 for (int x = offsetX; x < (offsetX + width); x++) {
                     uint8_t a = *(ptr+3);
-                    pixels[0 + (y * canvasX + x) * sizeof(uint32_t)] = blend(R, *(ptr + 0), a);
-                    pixels[1 + (y * canvasX + x) * sizeof(uint32_t)] = blend(G, *(ptr + 1), a);
-                    pixels[2 + (y * canvasX + x) * sizeof(uint32_t)] = blend(B, *(ptr + 2), a);
+                    uint8_t r = pixels[0 + (y * canvasX + x) * sizeof(uint32_t)];
+                    uint8_t g = pixels[1 + (y * canvasX + x) * sizeof(uint32_t)];
+                    uint8_t b = pixels[2 + (y * canvasX + x) * sizeof(uint32_t)];
+
+                    pixels[0 + (y * canvasX + x) * sizeof(uint32_t)] = blend(r, *(ptr + 0), a);
+                    pixels[1 + (y * canvasX + x) * sizeof(uint32_t)] = blend(g, *(ptr + 1), a);
+                    pixels[2 + (y * canvasX + x) * sizeof(uint32_t)] = blend(b, *(ptr + 2), a);
 
                     uint8_t alpha = pixels[3 + (y * canvasX + x) * sizeof(uint32_t)];
-                    if(alpha==0) {
-                        pixels[3 + (y * canvasX + x) * sizeof(uint32_t)] = *(ptr + 3);
-                    } else {
-                        pixels[3 + (y * canvasX + x) * sizeof(uint32_t)] = A;
-                    }
+                    pixels[3 + (y * canvasX + x) * sizeof(uint32_t)] = blend(alpha, *(ptr + 3), a);
 
                     ptr+=sizeof(uint32_t);
                 }
