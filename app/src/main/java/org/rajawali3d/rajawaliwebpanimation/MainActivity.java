@@ -77,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
                 anim.setRepeatMode(Animation.RepeatMode.INFINITE);
                 anim.setTransformable3D(obj);
                 getCurrentScene().registerAnimation(anim);
-                anim.play();
+                //anim.play();
 
                 getCurrentCamera().setPosition(3,4,5);
                 getCurrentCamera().setLookAt(obj.getPosition());
