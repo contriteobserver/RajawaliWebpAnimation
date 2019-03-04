@@ -15,8 +15,6 @@ package org.rajawali3d.rajawaliwebpanimation;
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
-import android.graphics.Color;
-import android.util.Log;
 
 import com.google.webp.webpJNI;
 
@@ -33,37 +31,23 @@ import static android.graphics.Bitmap.Config.ARGB_8888;
  * Creates a texture from an animated WebP.
  */
 public class AnimatedWebpTexture extends ASingleTexture {
-    private byte[] mData;
-    private long mDemux;
-    private int mNumFrames;
-    private int mBackgroundColor = 0;
-    private int currentFrame = 0;
+    private long mDecoder;
 
     public AnimatedWebpTexture(String name, int resourceId) throws IOException {
         super(TextureType.DIFFUSE, name);
+
         Context context = TextureManager.getInstance().getContext();
         AssetFileDescriptor fd = context.getResources().openRawResourceFd(resourceId);
-        mData = new byte[(int)fd.getLength()];
+        byte[] mData = new byte[(int)fd.getLength()];
         fd.close();
         InputStream inputStream = context.getResources().openRawResource(resourceId);
         long read = inputStream.read(mData);
 
-        mDemux = webpJNI.Demux(mData, read);
-        mNumFrames = webpJNI.DemuxGetFrameCount(mDemux);
-
-        mWidth = webpJNI.DemuxGetCanvasWidth(mDemux);
-        mHeight = webpJNI.DemuxGetCanvasHeight(mDemux);
-        mBackgroundColor = webpJNI.DemuxGetBackgroundColor(mDemux);
+        mDecoder = webpJNI.AnimDecoder(mData, read);
+        mWidth = webpJNI.AnimDecoderGetCanvasWidth(mDecoder);
+        mHeight = webpJNI.AnimDecoderGetCanvasHeight(mDecoder);
         mBitmap = Bitmap.createBitmap(mWidth, mHeight, ARGB_8888);
-
-        DecodeFrame(currentFrame);
-    }
-
-    private void DecodeFrame(int frame) {
-        long iter = webpJNI.DemuxGetFrame(mDemux, frame+1);
-        webpJNI.IterDecodeToBitmap(iter, mBitmap, mBitmap.getWidth(), mBitmap.getHeight(), mBackgroundColor);
-        webpJNI.DemuxReleaseIterator(iter);
-        setBitmap(mBitmap);
+        webpJNI.AnimDecoderGetNextBitmap(mDecoder, mBitmap);
     }
 
     @Override
@@ -72,8 +56,10 @@ public class AnimatedWebpTexture extends ASingleTexture {
     }
 
     public void update() {
-        currentFrame++;
-        DecodeFrame(currentFrame%mNumFrames);
+        if(webpJNI.AnimDecoderHasMoreFrames(mDecoder)==false) {
+            webpJNI.AnimDecoderReset(mDecoder);
+        }
+        webpJNI.AnimDecoderGetNextBitmap(mDecoder, mBitmap);
         TextureManager.getInstance().replaceTexture(this);
     }
 }

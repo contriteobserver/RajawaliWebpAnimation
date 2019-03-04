@@ -30,6 +30,7 @@ add_library( # Sets the name of the library.
         libwebp/src/dec/webp_dec.c
 
         libwebp/src/demux/demux.c
+        libwebp/src/demux/anim_decode.c
 
         libwebp/src/dsp/alpha_processing.c
         libwebp/src/dsp/alpha_processing_mips_dsp_r2.c

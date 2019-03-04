@@ -59,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
                 key.setPower(5.0f);
                 getCurrentScene().addLight(key);
 
-                texture = new AnimatedWebpTexture("maze", R.raw.checkerboard01);
+                texture = new AnimatedWebpTexture("checkerboard", R.raw.checkerboard01);
                 Material material = new Material();
                 material.addTexture(texture);
                 material.setColorInfluence(0);
