@@ -15,6 +15,7 @@ package org.rajawali3d.rajawaliwebpanimation;
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
+import android.util.Log;
 
 import com.google.webp.webpJNI;
 
@@ -32,22 +33,20 @@ import static android.graphics.Bitmap.Config.ARGB_8888;
  */
 public class AnimatedWebpTexture extends ASingleTexture {
     private long mDecoder;
+    private byte[] mData;
 
     public AnimatedWebpTexture(String name, int resourceId) throws IOException {
         super(TextureType.DIFFUSE, name);
 
         Context context = TextureManager.getInstance().getContext();
-        AssetFileDescriptor fd = context.getResources().openRawResourceFd(resourceId);
-        byte[] mData = new byte[(int)fd.getLength()];
-        fd.close();
         InputStream inputStream = context.getResources().openRawResource(resourceId);
+        mData = new byte[inputStream.available()];
         long read = inputStream.read(mData);
 
         mDecoder = webpJNI.AnimDecoder(mData, read);
         mWidth = webpJNI.AnimDecoderGetCanvasWidth(mDecoder);
         mHeight = webpJNI.AnimDecoderGetCanvasHeight(mDecoder);
         mBitmap = Bitmap.createBitmap(mWidth, mHeight, ARGB_8888);
-        webpJNI.AnimDecoderGetNextBitmap(mDecoder, mBitmap);
     }
 
     @Override
@@ -56,10 +55,11 @@ public class AnimatedWebpTexture extends ASingleTexture {
     }
 
     public void update() {
+        webpJNI.AnimDecoderGetNextBitmap(mDecoder, mBitmap);
+        TextureManager.getInstance().replaceTexture(this);
+
         if(webpJNI.AnimDecoderHasMoreFrames(mDecoder)==false) {
             webpJNI.AnimDecoderReset(mDecoder);
         }
-        webpJNI.AnimDecoderGetNextBitmap(mDecoder, mBitmap);
-        TextureManager.getInstance().replaceTexture(this);
     }
 }
